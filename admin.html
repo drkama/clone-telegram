@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jumagram Admin</title>
+<style>
+  body { background:#0e0a1a; color:#fff; font-family:sans-serif; padding:20px; }
+  h1 { color:#d946ef; }
+  table { width:100%; border-collapse:collapse; margin-bottom:20px; background:#1a0f2e; }
+  th, td { border:1px solid #7c3aed; padding:10px; text-align:left; font-size:14px; }
+  th { background:#2d1b4e; }
+  button { background:#e74c3c; color:#fff; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; }
+  button:hover { background:#c0392b; }
+  .tabs { margin-bottom:20px; }
+  .tab-btn { background:#7c3aed; color:#fff; border:none; padding:10px 20px; margin-right:10px; border-radius:5px; cursor:pointer; }
+  .tab-btn.active { background:#d946ef; }
+  .section { display:none; }
+  .section.active { display:block; }
+</style>
+</head>
+<body>
+  <h1>Jumagram Admin Panel</h1>
+  
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('users')">Пользователи</button>
+    <button class="tab-btn" onclick="showTab('messages')">Сообщения</button>
+  </div>
+
+  <div id="users" class="section active">
+    <table>
+      <thead><tr><th>Логин</th><th>Роль</th><th>Действие</th></tr></thead>
+      <tbody id="usersTable"></tbody>
+    </table>
+  </div>
+
+  <div id="messages" class="section">
+    <table>
+      <thead><tr><th>ID</th><th>От</th><th>Кому</th><th>Текст</th><th>Время</th><th>Удалить</th></tr></thead>
+      <tbody id="messagesTable"></tbody>
+    </table>
+  </div>
+
+<script>
+  // ВАЖНО: В реальном проекте нужно добавить проверку пароля админа тут!
+  // Сейчас страница открыта по адресу ваш-сайт.onrender.com/admin.html
+
+  async function loadData() {
+    const res = await fetch('/api/admin/data');
+    const data = await res.json();
+
+    // Рендер юзеров
+    const usersTb = document.getElementById('usersTable');
+    usersTb.innerHTML = data.users.map(u => `
+      <tr>
+        <td>@${u.username}</td>
+        <td>${u.is_admin ? 'Админ' : 'Юзер'}</td>
+        <td><button onclick="deleteUser('${u.username}')">Удалить</button></td>
+      </tr>
+    `).join('');
+
+    // Рендер сообщений
+    const msgsTb = document.getElementById('messagesTable');
+    msgsTb.innerHTML = data.messages.map(m => `
+      <tr>
+        <td>${m.id}</td>
+        <td>@${m.from_user}</td>
+        <td>@${m.to_user}</td>
+        <td>${m.text}</td>
+        <td>${m.time}</td>
+        <td><button onclick="deleteMessage(${m.id})">X</button></td>
+      </tr>
+    `).join('');
+  }
+
+  async function deleteUser(username) {
+    if (!confirm(`Удалить @${username} и все его сообщения?`)) return;
+    await fetch('/api/admin/delete-user', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ username })
+    });
+    loadData();
+  }
+
+  async function deleteMessage(id) {
+    if (!confirm(`Удалить сообщение #${id}?`)) return;
+    await fetch('/api/admin/delete-message', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ id })
+    });
+    loadData();
+  }
+
+  function showTab(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  loadData();
+</script>
+</body>
+  </html>
