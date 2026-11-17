@@ -7,26 +7,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter', sans-serif; }
-  body { background:#0e0a1a; display:flex; justify-content:center; align-items:center; height:100vh; overflow:hidden; }
+  body { background:#0e0a1a; display:flex; justify-content:center; align-items:center; height:100vh; overflow:hidden; color:#fff; }
 
-  /* Экран входа */
-  #loginScreen { background:rgba(30,18,50,0.9); padding:30px; border-radius:16px; width:90%; max-width:360px; display:flex; flex-direction:column; gap:15px; border:1px solid rgba(168,85,247,0.3); box-shadow:0 10px 30px rgba(0,0,0,0.5); }
-  #loginScreen h2 { color:#d946ef; text-align:center; font-size:28px; margin-bottom:10px; letter-spacing:1px; }
-  #loginScreen input { background:#1a0f2e; border:1px solid #3b2b52; padding:14px; border-radius:10px; color:#fff; font-size:15px; outline:none; transition:0.2s; }
-  #loginScreen input:focus { border-color:#a855f7; }
-  #loginScreen button { background:linear-gradient(135deg, #7c3aed, #d946ef); color:#fff; padding:14px; border:none; border-radius:10px; font-size:16px; font-weight:600; cursor:pointer; margin-top:5px; }
+  #loginScreen { background:rgba(30,18,50,0.9); padding:30px; border-radius:16px; width:90%; max-width:360px; display:flex; flex-direction:column; gap:15px; border:1px solid rgba(168,85,247,0.3); }
+  #loginScreen h2 { color:#d946ef; text-align:center; font-size:28px; margin-bottom:10px; }
+  #loginScreen input { background:#1a0f2e; border:1px solid #3b2b52; padding:14px; border-radius:10px; color:#fff; font-size:15px; outline:none; }
+  #loginScreen button { background:linear-gradient(135deg, #7c3aed, #d946ef); color:#fff; padding:14px; border:none; border-radius:10px; font-size:16px; font-weight:600; cursor:pointer; }
   #loginScreen .err { color:#f87171; text-align:center; font-size:13px; }
 
-  /* Основное приложение */
   #appScreen { width:100%; height:100vh; display:none; background:#0e0a1a; }
-  @media (min-width: 768px) {
-    #appScreen { max-width:1100px; height:90vh; border-radius:16px; border:1px solid rgba(168,85,247,0.2); box-shadow:0 0 40px rgba(0,0,0,0.6); display:none; }
-  }
-  
   .layout { display:flex; height:100%; }
-  /* Левая панель */
   .sidebar { width:100%; background:#140d24; display:flex; flex-direction:column; border-right:1px solid rgba(168,85,247,0.1); }
-  @media (min-width: 768px) { .sidebar { width:320px; } }
   
   .sidebar-header { padding:15px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(168,85,247,0.1); }
   .my-profile { display:flex; align-items:center; gap:10px; }
@@ -37,55 +28,57 @@
   .search-box { padding:10px 15px; }
   .search-box input { width:100%; background:#1a0f2e; border:none; padding:10px 15px; border-radius:20px; color:#fff; outline:none; font-size:14px; }
 
-  .chat-list { flex:1; overflow-y:auto; padding-bottom:20px; }
+  .chat-list { flex:1; overflow-y:auto; }
   .chat-item { display:flex; align-items:center; gap:12px; padding:10px 15px; cursor:pointer; transition:0.2s; }
   .chat-item:hover { background:#1a0f2e; }
-  .chat-item.active { background:linear-gradient(90deg, rgba(168,85,247,0.15), transparent); border-left:3px solid #d946ef; }
+  .chat-item.active { background:rgba(168,85,247,0.15); border-left:3px solid #d946ef; }
   
   .chat-info { flex:1; overflow:hidden; }
   .chat-name { color:#fff; font-size:15px; font-weight:500; margin-bottom:2px; display:flex; justify-content:space-between; }
   .chat-time { font-size:11px; color:#7f91a4; }
   .chat-last { color:#7f91a4; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-  /* Правая панель (Окно чата) */
-  .chat-window { flex:1; display:flex; flex-direction:column; background:#0e0a1a; display:none; }
-  @media (min-width: 768px) { .chat-window { display:flex; } }
+  .chat-window { flex:1; display:none; flex-direction:column; background:#0e0a1a; }
   .chat-window.active { display:flex; }
-  
   .chat-header { padding:10px 15px; display:flex; align-items:center; gap:12px; background:#140d24; border-bottom:1px solid rgba(168,85,247,0.1); }
   .back-btn { background:none; border:none; color:#a855f7; font-size:20px; cursor:pointer; display:none; }
-  @media (max-width: 767px) { .back-btn { display:block; } }
   .chat-header-info h3 { color:#fff; font-size:16px; font-weight:500; }
   .chat-header-info p { color:#a855f7; font-size:12px; }
 
-  .messages { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:10px; background:url('https://www.transparenttextures.com/patterns/cubes.png') #0e0a1a; }
-  .message { max-width:75%; padding:8px 12px; border-radius:12px; font-size:15px; line-height:1.4; position:relative; word-wrap:break-word; color:#fff; animation:fadeIn 0.2s ease; }
-  .message.in { background:#1a0f2e; align-self:flex-start; border-bottom-left-radius:2px; border:1px solid rgba(168,85,247,0.1); }
-  .message.out { background:linear-gradient(135deg, #7c3aed, #6d28d9); align-self:flex-end; border-bottom-right-radius:2px; box-shadow:0 2px 10px rgba(124,58,237,0.2); }
+  .messages { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:10px; background:#0e0a1a; }
+  .message { max-width:75%; padding:8px 12px; border-radius:12px; font-size:15px; line-height:1.4; position:relative; color:#fff; }
+  .message.in { background:#1a0f2e; align-self:flex-start; border-bottom-left-radius:2px; }
+  .message.out { background:linear-gradient(135deg, #7c3aed, #6d28d9); align-self:flex-end; border-bottom-right-radius:2px; }
   
   .message-meta { float:right; margin:4px 0 -4px 10px; display:flex; align-items:center; gap:4px; }
   .time { font-size:11px; color:rgba(255,255,255,0.6); }
   .checks { font-size:12px; color:rgba(255,255,255,0.6); }
   .checks.read { color:#60a5fa; }
 
-  .input-area { padding:10px 15px; background:#140d24; display:flex; align-items:flex-end; gap:10px; border-top:1px solid rgba(168,85,247,0.1); }
-  .input-area input { flex:1; background:#1a0f2e; border:none; padding:12px 16px; border-radius:20px; color:#fff; outline:none; font-size:15px; resize:none; max-height:100px; }
-  .send-btn { background:#d946ef; border:none; border-radius:50%; width:44px; height:44px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#fff; font-size:18px; flex-shrink:0; }
+  .input-area { padding:10px 15px; background:#140d24; display:flex; align-items:center; gap:10px; border-top:1px solid rgba(168,85,247,0.1); }
+  .input-area input { flex:1; background:#1a0f2e; border:none; padding:12px 16px; border-radius:20px; color:#fff; outline:none; font-size:15px; }
+  .send-btn { background:#d946ef; border:none; border-radius:50%; width:44px; height:44px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#fff; font-size:18px; }
 
-  .empty-state { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#7f91a4; gap:10px; }
-  .empty-state svg { width:60px; height:60px; opacity:0.5; }
+  .empty-state { flex:1; display:flex; align-items:center; justify-content:center; color:#7f91a4; }
 
-  @keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
-  
+  @media (min-width: 768px) {
+    #appScreen { max-width:1100px; height:90vh; border-radius:16px; border:1px solid rgba(168,85,247,0.2); }
+    .sidebar { width:320px; }
+    .chat-window { display:flex; }
+    .chat-window.active { display:flex; }
+    .back-btn { display:none !important; }
+  }
+
   @media (max-width: 767px) {
     .sidebar.hide-mobile { display:none; }
-    .chat-window { width:100%; }
+    .chat-window { display:none; }
+    .chat-window.active { display:flex; width:100%; }
+    .back-btn { display:block; }
   }
 </style>
 </head>
 <body>
 
-<!-- Экран входа -->
 <div id="loginScreen">
   <h2>Jumagram</h2>
   <input id="username" placeholder="Юзернейм" maxlength="20">
@@ -94,10 +87,8 @@
   <div class="err" id="err"></div>
 </div>
 
-<!-- Основное приложение -->
 <div id="appScreen">
   <div class="layout">
-    <!-- Левая панель -->
     <div class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="my-profile">
@@ -112,12 +103,8 @@
       <div class="chat-list" id="chatList"></div>
     </div>
 
-    <!-- Окно чата -->
     <div class="chat-window" id="chatWindow">
-      <div class="empty-state" id="emptyState">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-        <span>Выберите, кому хотели бы написать</span>
-      </div>
+      <div class="empty-state" id="emptyState">Выберите чат</div>
       
       <div id="chatContent" style="display:none; flex-direction:column; height:100%;">
         <div class="chat-header">
@@ -125,12 +112,12 @@
           <div class="avatar" id="chatAvatar"></div>
           <div class="chat-header-info">
             <h3 id="chatName"></h3>
-            <p id="chatStatus"></p>
+            <p id="chatStatus">в сети</p>
           </div>
         </div>
         <div class="messages" id="messages"></div>
         <div class="input-area">
-          <input id="messageInput" placeholder="Написать сообщение..." onkeypress="if(event.key==='Enter') send()">
+          <input id="messageInput" placeholder="Сообщение..." onkeypress="if(event.key==='Enter') send()">
           <button class="send-btn" onclick="send()">➤</button>
         </div>
       </div>
@@ -140,11 +127,10 @@
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-let socket, me = null, myAvatarColor = null, currentTo = null;
+let socket, me = null, myColor = null, currentTo = null;
 let allUsers = [];
 let allHistory = [];
 
-// Логин
 function login() {
   const u = document.getElementById('username').value.trim().toLowerCase();
   const p = document.getElementById('password').value;
@@ -156,7 +142,7 @@ function login() {
       if(res.error) return document.getElementById('err').innerText = res.error;
       
       me = res.username;
-      myAvatarColor = res.avatar_color;
+      myColor = res.color;
       allHistory = res.history;
       
       document.getElementById('loginScreen').style.display = 'none';
@@ -164,20 +150,14 @@ function login() {
       
       document.getElementById('myName').innerText = '@' + me;
       document.getElementById('myAvatar').innerText = me[0];
-      document.getElementById('myAvatar').style.background = myAvatarColor;
+      document.getElementById('myAvatar').style.background = myColor;
       
-      socket.on('users', (users) => {
-        allUsers = users;
-        renderChats();
-        if(currentTo) updateChatHeader();
-      });
-      
+      socket.on('users', (users) => { allUsers = users; renderChats(); });
       socket.on('message', (msg) => {
         allHistory.push(msg);
         if(msg.from === currentTo || msg.to === currentTo) renderMessages();
         renderChats();
       });
-
       socket.on('messages_read', ({ byUser }) => {
         allHistory.forEach(m => { if(m.from === me && m.to === byUser) m.is_read = 1; });
         if(currentTo === byUser) renderMessages();
@@ -186,7 +166,6 @@ function login() {
   });
 }
 
-// Отрисовка списка чатов
 function renderChats() {
   const search = document.getElementById('searchInput').value.toLowerCase();
   const list = document.getElementById('chatList');
@@ -218,7 +197,7 @@ function renderChats() {
     }
 
     div.innerHTML = `
-      <div class="avatar" style="background:${u.avatar_color}">${u.username[0]}</div>
+      <div class="avatar" style="background:${u.color}">${u.username[0]}</div>
       <div class="chat-info">
         <div class="chat-name">@${u.username} <span class="chat-time">${lastTime}</span></div>
         <div class="chat-last">${checkHtml} ${lastText}</div>
@@ -228,36 +207,26 @@ function renderChats() {
   });
 }
 
-// Открытие чата
 function openChat(username) {
   currentTo = username;
   document.getElementById('emptyState').style.display = 'none';
   document.getElementById('chatContent').style.display = 'flex';
+  document.getElementById('chatWindow').classList.add('active');
   
   if(window.innerWidth < 768) {
     document.getElementById('sidebar').classList.add('hide-mobile');
   }
   
-  updateChatHeader();
+  const user = allUsers.find(u => u.username === username);
+  document.getElementById('chatAvatar').innerText = user.username[0];
+  document.getElementById('chatAvatar').style.background = user.color;
+  document.getElementById('chatName').innerText = '@' + user.username;
+  
   renderMessages();
-  renderChats(); // Обновить выделение
-
-  // Пометить сообщения прочитанными
+  renderChats();
   socket.emit('mark_read', { withUser: currentTo });
 }
 
-function updateChatHeader() {
-  const user = allUsers.find(u => u.username === currentTo);
-  if(!user) return;
-  document.getElementById('chatAvatar').innerText = user.username[0];
-  document.getElementById('chatAvatar').style.background = user.avatar_color;
-  document.getElementById('chatName').innerText = '@' + user.username;
-  
-  const isOnline = allUsers.some(u => u.username === currentTo && u.is_online);
-  document.getElementById('chatStatus').innerText = isOnline ? 'в сети' : 'был(а) недавно';
-}
-
-// Отрисовка сообщений
 function renderMessages() {
   const box = document.getElementById('messages');
   const wasAtBottom = box.scrollHeight - box.scrollTop <= box.clientHeight + 50;
@@ -270,9 +239,7 @@ function renderMessages() {
     div.className = `message ${m.from === me ? 'out' : 'in'}`;
     
     let checks = '';
-    if(m.from === me) {
-      checks = `<span class="checks ${m.is_read ? 'read' : ''}">${m.is_read ? '✓✓' : '✓'}</span>`;
-    }
+    if(m.from === me) checks = `<span class="checks ${m.is_read ? 'read' : ''}">${m.is_read ? '✓✓' : '✓'}</span>`;
 
     div.innerHTML = `
       ${escapeHtml(m.text)}
@@ -307,4 +274,4 @@ function escapeHtml(t) {
 }
 </script>
 </body>
-         </html>
+ </html>
