@@ -3,92 +3,142 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const fs = require('fs');
+const Database = require('better-sqlite3');
+const bcrypt = require('bcryptjs');
 
+// --- ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ ---
+const db = new Database('jumagram.db');
+db.pragma('journal_mode = WAL');
+
+// Создаем таблицы, если их нет
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    username TEXT PRIMARY KEY,
+    password TEXT,
+    is_admin INTEGER DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    from_user TEXT,
+    to_user TEXT,
+    text TEXT,
+    time TEXT
+  );
+`);
+
+// Создаем главного админа по умолчанию (логин: admin, пароль: admin123)
+// Поменяйте пароль после первого входа!
+const adminExists = db.prepare('SELECT * FROM users WHERE username = ?').get('admin');
+if (!adminExists) {
+    const hash = bcrypt.hashSync('admin123', 10);
+    db.prepare('INSERT INTO users (username, password, is_admin) VALUES (?, ?, 1)').run('admin', hash);
+}
+
+// --- НАСТРОЙКА СЕРВЕРА ---
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// 1. Явно указываем, где лежит папка public
-const publicPath = __dirname;
-app.use(express.static(publicPath));
+app.use(express.static(path.join(__dirname))); // Раздаем статику из корня
+app.use(express.json()); // Для парсинга JSON в админке
 
-// 2. Явный маршрут для главной страницы (исправляет "Cannot GET /")
-app.get('/', (req, res) => {
-    const indexPath = path.join(publicPath, 'index.html');
-    if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
-    } else {
-        res.status(404).send('Ошибка: Файл index.html не найден в папке public. Проверьте структуру репозитория на GitHub.');
+// --- API ДЛЯ АДМИНКИ ---
+// Получить всех пользователей и сообщения (только для админа)
+app.get('/api/admin/data', (req, res) => {
+    // В реальном проекте здесь нужна авторизация (например, проверка токена)
+    try {
+        const users = db.prepare('SELECT username, is_admin FROM users').all();
+        const messages = db.prepare('SELECT * FROM messages ORDER BY id DESC LIMIT 100').all();
+        res.json({ users, messages });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
     }
 });
 
-// Хранилище в памяти (при перезапуске всё сбросится)
-const users = {};      // username -> { socketId, password }
-const messages = [];   // { from, to, text, time }
+// Удалить пользователя
+app.post('/api/admin/delete-user', (req, res) => {
+    const { username } = req.body;
+    db.prepare('DELETE FROM users WHERE username = ?').run(username);
+    db.prepare('DELETE FROM messages WHERE from_user = ? OR to_user = ?').run(username, username);
+    res.json({ success: true });
+});
+
+// Удалить сообщение
+app.post('/api/admin/delete-message', (req, res) => {
+    const { id } = req.body;
+    db.prepare('DELETE FROM messages WHERE id = ?').run(id);
+    res.json({ success: true });
+});
+
+// --- SOCKET.IO (ЧАТ) ---
+const onlineUsers = new Set(); // socketId -> username
 
 io.on('connection', (socket) => {
-    console.log('Подключился:', socket.id);
-
-    // Регистрация / вход
     socket.on('register', ({ username, password }, cb) => {
         if (!username || !password) return cb({ error: 'Заполните все поля' });
         username = username.toLowerCase().trim();
         if (username.length < 3) return cb({ error: 'Юзернейм минимум 3 символа' });
 
-        if (users[username]) {
-            // Вход — проверяем пароль
-            if (users[username].password !== password) {
+        let user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+
+        if (user) {
+            // Вход
+            if (!bcrypt.compareSync(password, user.password)) {
                 return cb({ error: 'Неверный пароль' });
             }
         } else {
             // Регистрация
-            users[username] = { password };
+            const hash = bcrypt.hashSync(password, 10);
+            db.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run(username, hash);
+            user = { username, is_admin: 0 };
         }
 
-        users[username].socketId = socket.id;
         socket.username = username;
+        onlineUsers.add(socket.id);
 
-        // Уведомляем всех о новом онлайне
-        io.emit('users', Object.keys(users));
+        // Отправляем список всех пользователей (для чата)
+        const allUsers = db.prepare('SELECT username FROM users').all().map(u => u.username);
+        io.emit('users', allUsers);
 
-        // Отправляем пользователю его историю сообщений
-        const history = messages.filter(m => m.from === username || m.to === username);
-        cb({ success: true, username, history });
+        // Отправляем историю сообщений пользователя
+        const history = db.prepare(`
+            SELECT from_user as "from", to_user as "to", text, time 
+            FROM messages 
+            WHERE from_user = ? OR to_user = ?
+        `).all(username, username);
+        
+        cb({ success: true, username, history, is_admin: user.is_admin === 1 });
     });
 
-    // Отправка сообщения
     socket.on('message', ({ to, text }) => {
         const from = socket.username;
         if (!from || !to || !text?.trim()) return;
 
-        const msg = {
-            from,
-            to: to.toLowerCase(),
-            text: text.trim(),
-            time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-        };
-        messages.push(msg);
+        const time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        
+        // Сохраняем в БД
+        db.prepare('INSERT INTO messages (from_user, to_user, text, time) VALUES (?, ?, ?, ?)')
+          .run(from, to.toLowerCase(), text.trim(), time);
 
-        // Отправляем получателю, если онлайн
-        const recipient = users[msg.to];
-        if (recipient?.socketId) {
-            io.to(recipient.socketId).emit('message', msg);
+        const msg = { from, to: to.toLowerCase(), text: text.trim(), time };
+        
+        // Отправляем получателю и отправителю
+        const recipientSocketId = [...onlineUsers].find(id => io.sockets.sockets.get(id)?.username === to.toLowerCase());
+        
+        if (recipientSocketId) {
+            io.to(recipientSocketId).emit('message', msg);
         }
-        // Эхо отправителю (для отображения)
         socket.emit('message', msg);
     });
 
     socket.on('disconnect', () => {
-        if (socket.username && users[socket.username]) {
-            users[socket.username].socketId = null;
-        }
-        io.emit('users', Object.keys(users));
+        onlineUsers.delete(socket.id);
     });
 });
 
-// Render автоматически задает порт через process.env.PORT
+// --- ЗАПУСК ---
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`Сервер успешно запущен на порту ${PORT}`);
-    console.log(`Раздача статики из папки: ${publicPath}`);
+    console.log(`Jumagram запущен на порту ${PORT}`);
+    console.log(`База данных: jumagram.db`);
 });
