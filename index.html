@@ -2,325 +2,309 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Jumagram</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; font-family:-apple-system, 'Segoe UI', Roboto, sans-serif; }
-  body { 
-    background: radial-gradient(circle at 30% 20%, #1a0f2e 0%, #0e0a1a 60%, #080510 100%);
-    display:flex; justify-content:center; align-items:center; height:100vh; 
-    color:#fff;
-  }
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter', sans-serif; }
+  body { background:#0e0a1a; display:flex; justify-content:center; align-items:center; height:100vh; overflow:hidden; }
 
   /* Экран входа */
-  .login {
-    background: rgba(30, 18, 50, 0.75);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(168, 85, 247, 0.2);
-    padding:32px; border-radius:20px; width:340px;
-    display:flex; flex-direction:column; gap:14px; color:#fff;
-    box-shadow: 0 10px 40px rgba(120, 40, 200, 0.25), inset 0 0 20px rgba(168, 85, 247, 0.05);
-  }
-  .login h2 { 
-    text-align:center; margin-bottom:8px; 
-    background: linear-gradient(90deg, #c084fc, #e879f9, #a855f7);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    font-size: 28px; letter-spacing: 1.5px; font-weight: 700;
-    filter: drop-shadow(0 0 10px rgba(217, 70, 239, 0.4));
-  }
-  .login input {
-    background: rgba(20, 12, 35, 0.8);
-    border: 1px solid rgba(168, 85, 247, 0.2);
-    border-radius:12px; padding:12px 14px; color:#fff; outline:none; font-size:14px;
-    transition: .2s;
-  }
-  .login input::placeholder { color:#8b6bb0; }
-  .login input:focus { border-color:#a855f7; box-shadow: 0 0 10px rgba(168, 85, 247, 0.3); }
-  .login button {
-    background: linear-gradient(135deg, #7c3aed, #a855f7, #d946ef);
-    color:#fff; border:none; border-radius:12px;
-    padding:12px; font-size:15px; font-weight: 600; cursor:pointer; 
-    transition:.2s; margin-top: 4px;
-    box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
-  }
-  .login button:hover { 
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(217, 70, 239, 0.5);
-  }
-  .login .err { color:#f87171; font-size:13px; text-align:center; }
+  #loginScreen { background:rgba(30,18,50,0.9); padding:30px; border-radius:16px; width:90%; max-width:360px; display:flex; flex-direction:column; gap:15px; border:1px solid rgba(168,85,247,0.3); box-shadow:0 10px 30px rgba(0,0,0,0.5); }
+  #loginScreen h2 { color:#d946ef; text-align:center; font-size:28px; margin-bottom:10px; letter-spacing:1px; }
+  #loginScreen input { background:#1a0f2e; border:1px solid #3b2b52; padding:14px; border-radius:10px; color:#fff; font-size:15px; outline:none; transition:0.2s; }
+  #loginScreen input:focus { border-color:#a855f7; }
+  #loginScreen button { background:linear-gradient(135deg, #7c3aed, #d946ef); color:#fff; padding:14px; border:none; border-radius:10px; font-size:16px; font-weight:600; cursor:pointer; margin-top:5px; }
+  #loginScreen .err { color:#f87171; text-align:center; font-size:13px; }
 
-  /* Приложение */
-  .app {
-    width:1000px; height:700px;
-    background: rgba(20, 12, 35, 0.85);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(168, 85, 247, 0.15);
-    border-radius:20px; display:none; overflow:hidden;
-    box-shadow: 0 0 50px rgba(120, 40, 200, 0.3);
+  /* Основное приложение */
+  #appScreen { width:100%; height:100vh; display:none; background:#0e0a1a; }
+  @media (min-width: 768px) {
+    #appScreen { max-width:1100px; height:90vh; border-radius:16px; border:1px solid rgba(168,85,247,0.2); box-shadow:0 0 40px rgba(0,0,0,0.6); display:none; }
   }
-  .app.show { display:flex; }
-
-  /* Сайдбар */
-  .sidebar {
-    width:300px; 
-    background: rgba(16, 9, 28, 0.6);
-    border-right: 1px solid rgba(168, 85, 247, 0.15);
-    display:flex; flex-direction:column;
-  }
-  .sidebar-header {
-    padding:16px; border-bottom:1px solid rgba(168, 85, 247, 0.15);
-    color:#e9d5ff; font-size:15px; font-weight: 600;
-    display:flex; justify-content:space-between; align-items:center;
-  }
-  .logout { 
-    background:none; border:none; color:#9d7ac0; cursor:pointer; font-size:13px;
-    transition: .2s;
-  }
-  .logout:hover { color:#e879f9; }
-  .chat-list { flex:1; overflow-y:auto; }
-
-  .chat-item {
-    display:flex; align-items:center; padding:12px 16px; gap:12px;
-    cursor:pointer; transition:.2s;
-    border-left: 3px solid transparent;
-  }
-  .chat-item:hover { background: rgba(168, 85, 247, 0.08); }
-  .chat-item.active { 
-    background: linear-gradient(90deg, rgba(168, 85, 247, 0.2), transparent);
-    border-left-color: #d946ef;
-  }
-
-  .avatar {
-    width:44px; height:44px; border-radius:50%;
-    background: linear-gradient(135deg, #7c3aed, #d946ef);
-    display:flex; align-items:center; justify-content:center; color:#fff;
-    font-weight:bold; font-size:16px; flex-shrink:0;
-    box-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
-  }
-  .chat-name { color:#f3e8ff; font-size:15px; font-weight: 500; }
-  .status { font-size:12px; color:#8b6bb0; }
-  .status.on { color:#a3e635; text-shadow: 0 0 6px rgba(163, 230, 53, 0.5); }
-
-  /* Окно чата */
-  .chat-window { flex:1; display:flex; flex-direction:column; }
-  .chat-header {
-    padding:12px 20px; 
-    background: rgba(25, 15, 45, 0.6);
-    border-bottom:1px solid rgba(168, 85, 247, 0.15);
-    display:flex; align-items:center; gap:12px; color:#fff;
-  }
-  .chat-header .avatar { width:38px; height:38px; font-size:15px; }
-  .chat-header h3 { font-size:16px; font-weight:500; color:#f3e8ff; }
-  .chat-header p { font-size:12px; color:#a78bfa; }
-
-  .messages { 
-    flex:1; padding:20px; overflow-y:auto; 
-    display:flex; flex-direction:column; gap:8px;
-    background: radial-gradient(circle at 70% 30%, rgba(88, 28, 135, 0.15) 0%, transparent 70%);
-  }
-  .message {
-    max-width:60%; padding:10px 14px; border-radius:16px; font-size:14px;
-    line-height:1.4; word-wrap:break-word; color:#fff;
-    animation: pop 0.2s ease;
-  }
-  @keyframes pop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-  .message.in {
-    background: rgba(45, 28, 72, 0.9);
-    border: 1px solid rgba(168, 85, 247, 0.15);
-    align-self:flex-start; border-bottom-left-radius:4px;
-  }
-  .message.out {
-    background: linear-gradient(135deg, #7c3aed, #a855f7);
-    align-self:flex-end; border-bottom-right-radius:4px;
-    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
-  }
-  .message .time { font-size:10px; color:rgba(255,255,255,0.6); margin-left:8px; float:right; margin-top:4px; }
-
-  /* Ввод */
-  .input-area {
-    padding:14px 20px; 
-    background: rgba(20, 12, 35, 0.8);
-    border-top: 1px solid rgba(168, 85, 247, 0.1);
-    display:flex; gap:12px;
-  }
-  .input-area input {
-    flex:1; 
-    background: rgba(35, 22, 55, 0.9);
-    border: 1px solid rgba(168, 85, 247, 0.15);
-    border-radius:24px; padding:10px 18px; color:#fff; outline:none; font-size:14px;
-    transition: .2s;
-  }
-  .input-area input::placeholder { color:#8b6bb0; }
-  .input-area input:focus { border-color:#a855f7; box-shadow: 0 0 12px rgba(168, 85, 247, 0.2); }
   
-  .send-btn {
-    background: linear-gradient(135deg, #7c3aed, #d946ef);
-    border:none; border-radius:50%; width:42px; height:42px;
-    display:flex; align-items:center; justify-content:center; cursor:pointer;
-    color:#fff; font-size:18px;
-    transition: .2s; box-shadow: 0 0 15px rgba(217, 70, 239, 0.4);
-  }
-  .send-btn:hover { transform: scale(1.05); box-shadow: 0 0 25px rgba(217, 70, 239, 0.6); }
+  .layout { display:flex; height:100%; }
+  /* Левая панель */
+  .sidebar { width:100%; background:#140d24; display:flex; flex-direction:column; border-right:1px solid rgba(168,85,247,0.1); }
+  @media (min-width: 768px) { .sidebar { width:320px; } }
+  
+  .sidebar-header { padding:15px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(168,85,247,0.1); }
+  .my-profile { display:flex; align-items:center; gap:10px; }
+  .avatar { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:600; font-size:16px; text-transform:uppercase; }
+  .my-name { color:#fff; font-weight:500; font-size:15px; }
+  .logout { background:none; border:none; color:#7f91a4; font-size:13px; cursor:pointer; }
+  
+  .search-box { padding:10px 15px; }
+  .search-box input { width:100%; background:#1a0f2e; border:none; padding:10px 15px; border-radius:20px; color:#fff; outline:none; font-size:14px; }
 
-  .empty { flex:1; display:flex; align-items:center; justify-content:center; color:#8b6bb0; font-size:14px; }
+  .chat-list { flex:1; overflow-y:auto; padding-bottom:20px; }
+  .chat-item { display:flex; align-items:center; gap:12px; padding:10px 15px; cursor:pointer; transition:0.2s; }
+  .chat-item:hover { background:#1a0f2e; }
+  .chat-item.active { background:linear-gradient(90deg, rgba(168,85,247,0.15), transparent); border-left:3px solid #d946ef; }
+  
+  .chat-info { flex:1; overflow:hidden; }
+  .chat-name { color:#fff; font-size:15px; font-weight:500; margin-bottom:2px; display:flex; justify-content:space-between; }
+  .chat-time { font-size:11px; color:#7f91a4; }
+  .chat-last { color:#7f91a4; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-  /* Скроллбар */
-  ::-webkit-scrollbar { width:6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.3); border-radius:3px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(168, 85, 247, 0.5); }
+  /* Правая панель (Окно чата) */
+  .chat-window { flex:1; display:flex; flex-direction:column; background:#0e0a1a; display:none; }
+  @media (min-width: 768px) { .chat-window { display:flex; } }
+  .chat-window.active { display:flex; }
+  
+  .chat-header { padding:10px 15px; display:flex; align-items:center; gap:12px; background:#140d24; border-bottom:1px solid rgba(168,85,247,0.1); }
+  .back-btn { background:none; border:none; color:#a855f7; font-size:20px; cursor:pointer; display:none; }
+  @media (max-width: 767px) { .back-btn { display:block; } }
+  .chat-header-info h3 { color:#fff; font-size:16px; font-weight:500; }
+  .chat-header-info p { color:#a855f7; font-size:12px; }
 
-  @media (max-width: 700px) {
-    .app { width:100%; height:100vh; border-radius:0; flex-direction: column; }
-    .sidebar { width:100%; height: 40%; border-right: none; border-bottom: 1px solid rgba(168, 85, 247, 0.15); }
-    .chat-window { height: 60%; }
-    .login { width: 90%; }
+  .messages { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:10px; background:url('https://www.transparenttextures.com/patterns/cubes.png') #0e0a1a; }
+  .message { max-width:75%; padding:8px 12px; border-radius:12px; font-size:15px; line-height:1.4; position:relative; word-wrap:break-word; color:#fff; animation:fadeIn 0.2s ease; }
+  .message.in { background:#1a0f2e; align-self:flex-start; border-bottom-left-radius:2px; border:1px solid rgba(168,85,247,0.1); }
+  .message.out { background:linear-gradient(135deg, #7c3aed, #6d28d9); align-self:flex-end; border-bottom-right-radius:2px; box-shadow:0 2px 10px rgba(124,58,237,0.2); }
+  
+  .message-meta { float:right; margin:4px 0 -4px 10px; display:flex; align-items:center; gap:4px; }
+  .time { font-size:11px; color:rgba(255,255,255,0.6); }
+  .checks { font-size:12px; color:rgba(255,255,255,0.6); }
+  .checks.read { color:#60a5fa; }
+
+  .input-area { padding:10px 15px; background:#140d24; display:flex; align-items:flex-end; gap:10px; border-top:1px solid rgba(168,85,247,0.1); }
+  .input-area input { flex:1; background:#1a0f2e; border:none; padding:12px 16px; border-radius:20px; color:#fff; outline:none; font-size:15px; resize:none; max-height:100px; }
+  .send-btn { background:#d946ef; border:none; border-radius:50%; width:44px; height:44px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#fff; font-size:18px; flex-shrink:0; }
+
+  .empty-state { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#7f91a4; gap:10px; }
+  .empty-state svg { width:60px; height:60px; opacity:0.5; }
+
+  @keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+  
+  @media (max-width: 767px) {
+    .sidebar.hide-mobile { display:none; }
+    .chat-window { width:100%; }
   }
 </style>
 </head>
 <body>
-<div class="login" id="login">
+
+<!-- Экран входа -->
+<div id="loginScreen">
   <h2>Jumagram</h2>
-  <input id="username" placeholder="Юзернейм (например, anna)" maxlength="20">
+  <input id="username" placeholder="Юзернейм" maxlength="20">
   <input id="password" type="password" placeholder="Пароль" maxlength="30">
-  <button id="enterBtn">Войти / Зарегистрироваться</button>
+  <button onclick="login()">Войти</button>
   <div class="err" id="err"></div>
 </div>
 
-<div class="app" id="app">
-  <div class="sidebar">
-    <div class="sidebar-header">
-      <span id="myName"></span>
-      <button class="logout" id="logoutBtn">Выйти</button>
+<!-- Основное приложение -->
+<div id="appScreen">
+  <div class="layout">
+    <!-- Левая панель -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="my-profile">
+          <div class="avatar" id="myAvatar"></div>
+          <div class="my-name" id="myName"></div>
+        </div>
+        <button class="logout" onclick="location.reload()">Выйти</button>
+      </div>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Поиск" oninput="renderChats()">
+      </div>
+      <div class="chat-list" id="chatList"></div>
     </div>
-    <div class="chat-list" id="chatList"></div>
-  </div>
-  <div class="chat-window">
-    <div class="chat-header" id="chatHeader" style="display:none;">
-      <div class="avatar" id="chatAvatar"></div>
-      <div>
-        <h3 id="chatName"></h3>
-        <p id="chatStatus"></p>
+
+    <!-- Окно чата -->
+    <div class="chat-window" id="chatWindow">
+      <div class="empty-state" id="emptyState">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        <span>Выберите, кому хотели бы написать</span>
+      </div>
+      
+      <div id="chatContent" style="display:none; flex-direction:column; height:100%;">
+        <div class="chat-header">
+          <button class="back-btn" onclick="closeChatMobile()">←</button>
+          <div class="avatar" id="chatAvatar"></div>
+          <div class="chat-header-info">
+            <h3 id="chatName"></h3>
+            <p id="chatStatus"></p>
+          </div>
+        </div>
+        <div class="messages" id="messages"></div>
+        <div class="input-area">
+          <input id="messageInput" placeholder="Написать сообщение..." onkeypress="if(event.key==='Enter') send()">
+          <button class="send-btn" onclick="send()">➤</button>
+        </div>
       </div>
     </div>
-    <div class="messages" id="messages"></div>
-    <div class="input-area" id="inputArea" style="display:none;">
-      <input id="messageInput" placeholder="Написать сообщение...">
-      <button class="send-btn" id="sendBtn">➤</button>
-    </div>
-    <div class="empty" id="empty">Выберите чат</div>
   </div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-let socket, me = null, currentTo = null;
-const usersOnline = new Set();
-const history = [];
-const $ = id => document.getElementById(id);
+let socket, me = null, myAvatarColor = null, currentTo = null;
+let allUsers = [];
+let allHistory = [];
 
-$('enterBtn').onclick = () => {
-  const username = $('username').value.trim().toLowerCase();
-  const password = $('password').value;
-  $('err').textContent = '';
-
+// Логин
+function login() {
+  const u = document.getElementById('username').value.trim().toLowerCase();
+  const p = document.getElementById('password').value;
+  if(!u || !p) return document.getElementById('err').innerText = 'Заполните поля';
+  
   socket = io();
   socket.on('connect', () => {
-    socket.emit('register', { username, password }, (res) => {
-      if (res.error) { $('err').textContent = res.error; socket.disconnect(); return; }
+    socket.emit('register', { username: u, password: p }, (res) => {
+      if(res.error) return document.getElementById('err').innerText = res.error;
+      
       me = res.username;
-      res.history.forEach(m => history.push(m));
-      $('login').style.display = 'none';
-      $('app').classList.add('show');
-      $('myName').textContent = '@' + me;
-      renderUsers();
-      bindSocket();
+      myAvatarColor = res.avatar_color;
+      allHistory = res.history;
+      
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('appScreen').style.display = 'block';
+      
+      document.getElementById('myName').innerText = '@' + me;
+      document.getElementById('myAvatar').innerText = me[0];
+      document.getElementById('myAvatar').style.background = myAvatarColor;
+      
+      socket.on('users', (users) => {
+        allUsers = users;
+        renderChats();
+        if(currentTo) updateChatHeader();
+      });
+      
+      socket.on('message', (msg) => {
+        allHistory.push(msg);
+        if(msg.from === currentTo || msg.to === currentTo) renderMessages();
+        renderChats();
+      });
+
+      socket.on('messages_read', ({ byUser }) => {
+        allHistory.forEach(m => { if(m.from === me && m.to === byUser) m.is_read = 1; });
+        if(currentTo === byUser) renderMessages();
+      });
     });
-  });
-};
-
-function bindSocket() {
-  socket.on('users', (list) => {
-    usersOnline.clear();
-    list.forEach(u => { if (u !== me) usersOnline.add(u); });
-    renderUsers();
-    if (currentTo) updateHeader();
-  });
-
-  socket.on('message', (msg) => {
-    history.push(msg);
-    if ((msg.from === currentTo && msg.to === me) || (msg.from === me && msg.to === currentTo)) {
-      renderMessages();
-    }
   });
 }
 
-function renderUsers() {
-  const list = $('chatList');
+// Отрисовка списка чатов
+function renderChats() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const list = document.getElementById('chatList');
   list.innerHTML = '';
-  if (usersOnline.size === 0) {
-    list.innerHTML = '<div style="padding:20px;color:#8b6bb0;font-size:13px;text-align:center;">Пока никого нет онлайн.<br>Попросите друга зарегистрироваться.</div>';
+  
+  const others = allUsers.filter(u => u.username !== me && u.username.includes(search));
+  
+  if(others.length === 0) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:#7f91a4;font-size:13px;">Никого не найдено</div>';
     return;
   }
-  [...usersOnline].sort().forEach(user => {
+
+  others.forEach(u => {
+    const msgs = allHistory.filter(m => (m.from === me && m.to === u.username) || (m.from === u.username && m.to === me));
+    const lastMsg = msgs[msgs.length - 1];
+    
     const div = document.createElement('div');
-    div.className = 'chat-item' + (user === currentTo ? ' active' : '');
+    div.className = `chat-item ${currentTo === u.username ? 'active' : ''}`;
+    div.onclick = () => openChat(u.username);
+    
+    let lastText = 'Нет сообщений';
+    let lastTime = '';
+    let checkHtml = '';
+    
+    if(lastMsg) {
+      lastText = (lastMsg.from === me ? 'Вы: ' : '') + lastMsg.text;
+      lastTime = lastMsg.time;
+      if(lastMsg.from === me) checkHtml = lastMsg.is_read ? '✓✓' : '✓';
+    }
+
     div.innerHTML = `
-      <div class="avatar">${user[0].toUpperCase()}</div>
-      <div>
-        <div class="chat-name">@${user}</div>
-        <div class="status on">в сети</div>
-      </div>`;
-    div.onclick = () => openChat(user);
+      <div class="avatar" style="background:${u.avatar_color}">${u.username[0]}</div>
+      <div class="chat-info">
+        <div class="chat-name">@${u.username} <span class="chat-time">${lastTime}</span></div>
+        <div class="chat-last">${checkHtml} ${lastText}</div>
+      </div>
+    `;
     list.appendChild(div);
   });
 }
 
-function openChat(user) {
-  currentTo = user;
-  $('chatHeader').style.display = 'flex';
-  $('inputArea').style.display = 'flex';
-  $('empty').style.display = 'none';
-  updateHeader();
+// Открытие чата
+function openChat(username) {
+  currentTo = username;
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('chatContent').style.display = 'flex';
+  
+  if(window.innerWidth < 768) {
+    document.getElementById('sidebar').classList.add('hide-mobile');
+  }
+  
+  updateChatHeader();
   renderMessages();
-  renderUsers();
+  renderChats(); // Обновить выделение
+
+  // Пометить сообщения прочитанными
+  socket.emit('mark_read', { withUser: currentTo });
 }
 
-function updateHeader() {
-  $('chatAvatar').textContent = currentTo[0].toUpperCase();
-  $('chatName').textContent = '@' + currentTo;
-  $('chatStatus').textContent = usersOnline.has(currentTo) ? 'в сети' : 'не в сети';
+function updateChatHeader() {
+  const user = allUsers.find(u => u.username === currentTo);
+  if(!user) return;
+  document.getElementById('chatAvatar').innerText = user.username[0];
+  document.getElementById('chatAvatar').style.background = user.avatar_color;
+  document.getElementById('chatName').innerText = '@' + user.username;
+  
+  const isOnline = allUsers.some(u => u.username === currentTo && u.is_online);
+  document.getElementById('chatStatus').innerText = isOnline ? 'в сети' : 'был(а) недавно';
 }
 
+// Отрисовка сообщений
 function renderMessages() {
-  const box = $('messages');
+  const box = document.getElementById('messages');
+  const wasAtBottom = box.scrollHeight - box.scrollTop <= box.clientHeight + 50;
+  
   box.innerHTML = '';
-  history
-    .filter(m => (m.from === me && m.to === currentTo) || (m.from === currentTo && m.to === me))
-    .forEach(m => {
-      const div = document.createElement('div');
-      div.className = 'message ' + (m.from === me ? 'out' : 'in');
-      div.innerHTML = `${escapeHtml(m.text)}<span class="time">${m.time}</span>`;
-      box.appendChild(div);
-    });
-  box.scrollTop = box.scrollHeight;
+  const filtered = allHistory.filter(m => (m.from === me && m.to === currentTo) || (m.from === currentTo && m.to === me));
+  
+  filtered.forEach(m => {
+    const div = document.createElement('div');
+    div.className = `message ${m.from === me ? 'out' : 'in'}`;
+    
+    let checks = '';
+    if(m.from === me) {
+      checks = `<span class="checks ${m.is_read ? 'read' : ''}">${m.is_read ? '✓✓' : '✓'}</span>`;
+    }
+
+    div.innerHTML = `
+      ${escapeHtml(m.text)}
+      <div class="message-meta">
+        <span class="time">${m.time}</span>
+        ${checks}
+      </div>
+    `;
+    box.appendChild(div);
+  });
+  
+  if(wasAtBottom) box.scrollTop = box.scrollHeight;
+}
+
+function send() {
+  const input = document.getElementById('messageInput');
+  const text = input.value.trim();
+  if(!text || !currentTo) return;
+  socket.emit('message', { to: currentTo, text });
+  input.value = '';
+}
+
+function closeChatMobile() {
+  document.getElementById('sidebar').classList.remove('hide-mobile');
+  document.getElementById('chatWindow').classList.remove('active');
+  currentTo = null;
+  renderChats();
 }
 
 function escapeHtml(t) {
   return t.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-
-function send() {
-  const text = $('messageInput').value.trim();
-  if (!text || !currentTo) return;
-  socket.emit('message', { to: currentTo, text });
-  $('messageInput').value = '';
-}
-
-$('sendBtn').onclick = send;
-$('messageInput').addEventListener('keypress', e => { if (e.key === 'Enter') send(); });
-$('logoutBtn').onclick = () => location.reload();
 </script>
 </body>
-     </html>
+         </html>
