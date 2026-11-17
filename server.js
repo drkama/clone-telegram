@@ -9,7 +9,7 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 // 1. Явно указываем, где лежит папка public
-const publicPath = path.join(__dirname, 'public');
+const publicPath = __dirname;
 app.use(express.static(publicPath));
 
 // 2. Явный маршрут для главной страницы (исправляет "Cannot GET /")
