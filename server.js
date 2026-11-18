@@ -10,26 +10,41 @@ const io = new Server(server);
 app.use(express.static(path.join(__dirname)));
 app.use(express.json());
 
-// Админка (простая)
+const users = {}; // username -> { password, socketId, color, last_seen }
+const messages = []; // { from, to, text, time, is_read }
+
+function getRandomColor() {
+    const colors = ['#7c3aed', '#d946ef', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
+    return colors[Math.floor(Math.random() * colors.length)];
+}
+
+// API для админки
 app.get('/api/admin/users', (req, res) => {
-    res.json(Object.keys(users).map(u => ({ username: u, online: !!users[u].socketId })));
+    res.json(Object.keys(users).map(u => ({ 
+        username: u, 
+        online: !!users[u].socketId,
+        last_seen: users[u].last_seen || 'недавно'
+    })));
 });
+
 app.post('/api/admin/delete', (req, res) => {
     const { username } = req.body;
     delete users[username];
     for (let i = messages.length - 1; i >= 0; i--) {
         if (messages[i].from === username || messages[i].to === username) messages.splice(i, 1);
     }
-    io.emit('users', Object.keys(users));
+    broadcastUsers();
     res.json({ success: true });
 });
 
-const users = {}; // username -> { password, socketId, color }
-const messages = []; // { from, to, text, time, is_read }
-
-function getRandomColor() {
-    const colors = ['#7c3aed', '#d946ef', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
-    return colors[Math.floor(Math.random() * colors.length)];
+function broadcastUsers() {
+    const userList = Object.keys(users).map(u => ({
+        username: u,
+        color: users[u].color,
+        is_online: !!users[u].socketId,
+        last_seen: users[u].socketId ? 'в сети' : (users[u].last_seen || 'недавно')
+    }));
+    io.emit('users', userList);
 }
 
 io.on('connection', (socket) => {
@@ -41,13 +56,18 @@ io.on('connection', (socket) => {
         if (users[username]) {
             if (users[username].password !== password) return cb({ error: 'Неверный пароль' });
         } else {
-            users[username] = { password, color: getRandomColor(), socketId: null };
+            users[username] = { password, color: getRandomColor(), socketId: null, last_seen: 'недавно' };
+        }
+
+        // Если этот юзер уже сидел в другой вкладке, отключаем старую
+        if (users[username].socketId) {
+            io.sockets.sockets.get(users[username].socketId)?.disconnect();
         }
 
         users[username].socketId = socket.id;
         socket.username = username;
 
-        io.emit('users', Object.keys(users).map(u => ({ username: u, color: users[u].color })));
+        broadcastUsers();
 
         const history = messages.filter(m => m.from === username || m.to === username);
         cb({ success: true, username, history, is_admin: username === 'кама', color: users[username].color });
@@ -73,8 +93,11 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        if (socket.username && users[socket.username]) users[socket.username].socketId = null;
-        io.emit('users', Object.keys(users).map(u => ({ username: u, color: users[u].color })));
+        if (socket.username && users[socket.username]) {
+            users[socket.username].socketId = null;
+            users[socket.username].last_seen = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            broadcastUsers();
+        }
     });
 });
 
