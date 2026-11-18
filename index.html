@@ -11,7 +11,7 @@
 
   #loginScreen { background:rgba(30,18,50,0.9); padding:30px; border-radius:16px; width:90%; max-width:360px; display:flex; flex-direction:column; gap:15px; border:1px solid rgba(168,85,247,0.3); }
   #loginScreen h2 { color:#d946ef; text-align:center; font-size:28px; margin-bottom:10px; }
-  #loginScreen input { background:#1a0f2e; border:1px solid #3b2b52; padding:14px; border-radius:10px; color:#fff; font-size:15px; outline:none; }
+  #loginScreen input { background:#1a0f2e; border:1px solid #3b2b52; padding:14px; border-radius:10px; color:#fff; font-size:15px; outline:none; text-align:center; }
   #loginScreen button { background:linear-gradient(135deg, #7c3aed, #d946ef); color:#fff; padding:14px; border:none; border-radius:10px; font-size:16px; font-weight:600; cursor:pointer; }
   #loginScreen .err { color:#f87171; text-align:center; font-size:13px; }
 
@@ -65,7 +65,6 @@
     #appScreen { max-width:1100px; height:90vh; border-radius:16px; border:1px solid rgba(168,85,247,0.2); }
     .sidebar { width:320px; }
     .chat-window { display:flex; }
-    .chat-window.active { display:flex; }
     .back-btn { display:none !important; }
   }
 
@@ -81,8 +80,8 @@
 
 <div id="loginScreen">
   <h2>Jumagram</h2>
-  <input id="username" placeholder="Юзернейм" maxlength="20">
-  <input id="password" type="password" placeholder="Пароль" maxlength="30">
+  <p style="text-align:center; color:#7f91a4; font-size:13px; margin-bottom:10px;">Введите любой ник для входа</p>
+  <input id="username" placeholder="Ваш ник" maxlength="20">
   <button onclick="login()">Войти</button>
   <div class="err" id="err"></div>
 </div>
@@ -112,7 +111,7 @@
           <div class="avatar" id="chatAvatar"></div>
           <div class="chat-header-info">
             <h3 id="chatName"></h3>
-            <p id="chatStatus">в сети</p>
+            <p id="chatStatus"></p>
           </div>
         </div>
         <div class="messages" id="messages"></div>
@@ -133,12 +132,11 @@ let allHistory = [];
 
 function login() {
   const u = document.getElementById('username').value.trim().toLowerCase();
-  const p = document.getElementById('password').value;
-  if(!u || !p) return document.getElementById('err').innerText = 'Заполните поля';
+  if(!u) return document.getElementById('err').innerText = 'Введите ник';
   
   socket = io();
   socket.on('connect', () => {
-    socket.emit('register', { username: u, password: p }, (res) => {
+    socket.emit('join', { username: u }, (res) => {
       if(res.error) return document.getElementById('err').innerText = res.error;
       
       me = res.username;
@@ -152,7 +150,7 @@ function login() {
       document.getElementById('myAvatar').innerText = me[0];
       document.getElementById('myAvatar').style.background = myColor;
       
-      socket.on('users', (users) => { allUsers = users; renderChats(); });
+      socket.on('users', (users) => { allUsers = users; renderChats(); if(currentTo) updateHeaderStatus(); });
       socket.on('message', (msg) => {
         allHistory.push(msg);
         if(msg.from === currentTo || msg.to === currentTo) renderMessages();
@@ -161,6 +159,7 @@ function login() {
       socket.on('messages_read', ({ byUser }) => {
         allHistory.forEach(m => { if(m.from === me && m.to === byUser) m.is_read = 1; });
         if(currentTo === byUser) renderMessages();
+        renderChats();
       });
     });
   });
@@ -174,9 +173,17 @@ function renderChats() {
   const others = allUsers.filter(u => u.username !== me && u.username.includes(search));
   
   if(others.length === 0) {
-    list.innerHTML = '<div style="padding:20px;text-align:center;color:#7f91a4;font-size:13px;">Никого не найдено</div>';
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:#7f91a4;font-size:13px;">Пользователи не найдены</div>';
     return;
   }
+
+  others.sort((a, b) => {
+    const aMsgs = allHistory.filter(m => m.from === a.username || m.to === a.username).length;
+    const bMsgs = allHistory.filter(m => m.from === b.username || m.to === b.username).length;
+    if (aMsgs > 0 && bMsgs === 0) return -1;
+    if (aMsgs === 0 && bMsgs > 0) return 1;
+    return a.username.localeCompare(b.username);
+  });
 
   others.forEach(u => {
     const msgs = allHistory.filter(m => (m.from === me && m.to === u.username) || (m.from === u.username && m.to === me));
@@ -194,6 +201,8 @@ function renderChats() {
       lastText = (lastMsg.from === me ? 'Вы: ' : '') + lastMsg.text;
       lastTime = lastMsg.time;
       if(lastMsg.from === me) checkHtml = lastMsg.is_read ? '✓✓' : '✓';
+    } else {
+      lastText = u.is_online ? 'в сети' : u.last_seen;
     }
 
     div.innerHTML = `
@@ -217,14 +226,19 @@ function openChat(username) {
     document.getElementById('sidebar').classList.add('hide-mobile');
   }
   
-  const user = allUsers.find(u => u.username === username);
-  document.getElementById('chatAvatar').innerText = user.username[0];
-  document.getElementById('chatAvatar').style.background = user.color;
-  document.getElementById('chatName').innerText = '@' + user.username;
-  
+  updateHeaderStatus();
   renderMessages();
   renderChats();
   socket.emit('mark_read', { withUser: currentTo });
+}
+
+function updateHeaderStatus() {
+  const user = allUsers.find(u => u.username === currentTo);
+  if(!user) return;
+  document.getElementById('chatAvatar').innerText = user.username[0];
+  document.getElementById('chatAvatar').style.background = user.color;
+  document.getElementById('chatName').innerText = '@' + user.username;
+  document.getElementById('chatStatus').innerText = user.is_online ? 'в сети' : user.last_seen;
 }
 
 function renderMessages() {
