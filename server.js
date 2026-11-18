@@ -10,7 +10,7 @@ const io = new Server(server);
 app.use(express.static(path.join(__dirname)));
 app.use(express.json());
 
-const users = {}; // username -> { password, socketId, color, last_seen }
+const users = {}; // username -> { socketId, color, last_seen }
 const messages = []; // { from, to, text, time, is_read }
 
 function getRandomColor() {
@@ -48,18 +48,16 @@ function broadcastUsers() {
 }
 
 io.on('connection', (socket) => {
-    socket.on('register', ({ username, password }, cb) => {
-        if (!username || !password) return cb({ error: 'Заполните все поля' });
-        username = username.toLowerCase().trim();
-        if (username.length < 3) return cb({ error: 'Минимум 3 символа' });
+    // Упрощенный вход (только ник)
+    socket.on('join', ({ username }, cb) => {
+        username = username?.toLowerCase().trim();
+        if (!username || username.length < 2) return cb({ error: 'Ник слишком короткий' });
 
-        if (users[username]) {
-            if (users[username].password !== password) return cb({ error: 'Неверный пароль' });
-        } else {
-            users[username] = { password, color: getRandomColor(), socketId: null, last_seen: 'недавно' };
+        if (!users[username]) {
+            users[username] = { color: getRandomColor(), socketId: null, last_seen: 'недавно' };
         }
 
-        // Если этот юзер уже сидел в другой вкладке, отключаем старую
+        // Отключаем старую сессию, если этот ник зашел с другого устройства
         if (users[username].socketId) {
             io.sockets.sockets.get(users[username].socketId)?.disconnect();
         }
@@ -70,7 +68,7 @@ io.on('connection', (socket) => {
         broadcastUsers();
 
         const history = messages.filter(m => m.from === username || m.to === username);
-        cb({ success: true, username, history, is_admin: username === 'кама', color: users[username].color });
+        cb({ success: true, username, history, color: users[username].color });
     });
 
     socket.on('mark_read', ({ withUser }) => {
